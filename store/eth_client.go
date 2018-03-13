@@ -54,6 +54,30 @@ func (eth *EthClient) GetEthBalance(address common.Address) (float64, error) {
 	return utils.WeiToEth(numWei), nil
 }
 
+func (eth *EthClient) GetERC20Balance(address common.Address, contractAddress common.Address) (*big.Int, error) {
+	result := ""
+	numLinkBigInt := new(big.Int)
+	functionSelector := models.HexToFunctionSelector("0x70a08231") // balanceOf(address)
+	contractAddressBytes, err := utils.HexToBytes(contractAddress.Hex())
+	if err != nil {
+		return nil, err
+	}
+	data, err := utils.HexToBytes(functionSelector.String(), common.ToHex(common.LeftPadBytes(contractAddressBytes, utils.EVMWordByteLen)))
+	if err != nil {
+		return nil, err
+	}
+	tx := models.Tx{
+		To:   address,
+		Data: data,
+	}
+	err = eth.Call(&result, "eth_call", tx.EthTx(big.NewInt(0)), "latest")
+	if err != nil {
+		return numLinkBigInt, err
+	}
+	numLinkBigInt.SetString(result, 0)
+	return numLinkBigInt, nil
+}
+
 // SendRawTx sends a signed transaction to the transaction pool.
 func (eth *EthClient) SendRawTx(hex string) (common.Hash, error) {
 	result := common.Hash{}

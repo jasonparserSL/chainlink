@@ -8,6 +8,7 @@ import (
 	"path"
 	"reflect"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/gin-gonic/gin"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/smartcontractkit/env"
@@ -17,18 +18,19 @@ import (
 // Config holds parameters used by the application which can be overridden
 // by setting environment variables.
 type Config struct {
-	LogLevel            LogLevel `env:"LOG_LEVEL" envDefault:"info"`
-	RootDir             string   `env:"ROOT" envDefault:"~/.chainlink"`
-	Port                string   `env:"PORT" envDefault:"6688"`
-	BasicAuthUsername   string   `env:"USERNAME" envDefault:"chainlink"`
-	BasicAuthPassword   string   `env:"PASSWORD" envDefault:"twochains"`
-	EthereumURL         string   `env:"ETH_URL" envDefault:"ws://localhost:8546"`
-	ChainID             uint64   `env:"ETH_CHAIN_ID" envDefault:"0"`
-	ClientNodeURL       string   `env:"CLIENT_NODE_URL" envDefault:"http://localhost:6688"`
-	EthMinConfirmations uint64   `env:"ETH_MIN_CONFIRMATIONS" envDefault:"12"`
-	EthGasBumpThreshold uint64   `env:"ETH_GAS_BUMP_THRESHOLD" envDefault:"12"`
-	EthGasBumpWei       big.Int  `env:"ETH_GAS_BUMP_WEI" envDefault:"5000000000"`
-	EthGasPriceDefault  big.Int  `env:"ETH_GAS_PRICE_DEFAULT" envDefault:"20000000000"`
+	LogLevel            LogLevel       `env:"LOG_LEVEL" envDefault:"info"`
+	RootDir             string         `env:"ROOT" envDefault:"~/.chainlink"`
+	Port                string         `env:"PORT" envDefault:"6688"`
+	BasicAuthUsername   string         `env:"USERNAME" envDefault:"chainlink"`
+	BasicAuthPassword   string         `env:"PASSWORD" envDefault:"twochains"`
+	EthereumURL         string         `env:"ETH_URL" envDefault:"ws://localhost:8546"`
+	ChainID             uint64         `env:"ETH_CHAIN_ID" envDefault:"0"`
+	ClientNodeURL       string         `env:"CLIENT_NODE_URL" envDefault:"http://localhost:6688"`
+	EthMinConfirmations uint64         `env:"ETH_MIN_CONFIRMATIONS" envDefault:"12"`
+	EthGasBumpThreshold uint64         `env:"ETH_GAS_BUMP_THRESHOLD" envDefault:"12"`
+	EthGasBumpWei       big.Int        `env:"ETH_GAS_BUMP_WEI" envDefault:"5000000000"`
+	EthGasPriceDefault  big.Int        `env:"ETH_GAS_PRICE_DEFAULT" envDefault:"20000000000"`
+	LinkContractAddress common.Address `env:"LINK_CONTRACT_ADDRESS" envDefault:"0x514910771AF9Ca656af840dff83E8264EcF986CA"`
 }
 
 // NewConfig returns the config with the environment variables set to their
@@ -56,8 +58,9 @@ func (c Config) KeysDir() string {
 
 func parseEnv(cfg interface{}) error {
 	return env.ParseWithFuncs(cfg, env.CustomParsers{
-		reflect.TypeOf(big.Int{}):  bigIntParser,
-		reflect.TypeOf(LogLevel{}): levelParser,
+		reflect.TypeOf(big.Int{}):        bigIntParser,
+		reflect.TypeOf(LogLevel{}):       levelParser,
+		reflect.TypeOf(common.Address{}): addressParser,
 	})
 }
 
@@ -73,6 +76,10 @@ func levelParser(str string) (interface{}, error) {
 	var lvl LogLevel
 	err := lvl.Set(str)
 	return lvl, err
+}
+
+func addressParser(str string) (interface{}, error) {
+	return common.StringToAddress(str), nil
 }
 
 // LogLevel determines the verbosity of the events to be logged.
